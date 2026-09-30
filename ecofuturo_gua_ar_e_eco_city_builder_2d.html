@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoFuturo | Água, Ar e Eco-City Builder 2D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        apple: {
+                            bgDark: '#000000',
+                            cardDark: 'rgba(24, 24, 27, 0.75)',
+                            cardLight: 'rgba(255, 255, 255, 0.85)',
+                            waterGlow: '#00d2ff',
+                            airGlow: '#a855f7',
+                            cityGlow: '#10b981',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow-pulse': 'glowPulse 3s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' },
+                        },
+                        glowPulse: {
+                            '0%': { filter: 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.2))' },
+                            '100%': { filter: 'drop-shadow(0 0 25px rgba(16, 185, 129, 0.6))' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        .glass-panel {
+            background: rgba(20, 20, 25, 0.7);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(28px) saturate(190%);
+            -webkit-backdrop-filter: blur(28px) saturate(190%);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .glass-dock {
+            background: rgba(15, 15, 18, 0.85);
+            backdrop-filter: blur(32px) saturate(210%);
+            -webkit-backdrop-filter: blur(32px) saturate(210%);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .light .glass-dock {
+            background: rgba(245, 245, 247, 0.88);
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(155, 155, 155, 0.3);
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(155, 155, 155, 0.5);
+        }
+
+        .apple-btn {
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .apple-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+        .apple-btn:active {
+            transform: scale(0.97);
+        }
+
+        .ambient-water-bg {
+            background: radial-gradient(circle at 50% 20%, rgba(0, 210, 255, 0.15), transparent 60%),
+                        radial-gradient(circle at 80% 80%, rgba(10, 147, 150, 0.12), transparent 50%);
+        }
+
+        .ambient-air-bg {
+            background: radial-gradient(circle at 30% 20%, rgba(168, 85, 247, 0.15), transparent 60%),
+                        radial-gradient(circle at 70% 80%, rgba(56, 189, 248, 0.15), transparent 50%);
+        }
+
+        .ambient-city-bg {
+            background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.15), transparent 65%),
+                        radial-gradient(circle at 20% 80%, rgba(52, 211, 153, 0.12), transparent 50%);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 99px;
+            height: 8px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .tab-content {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+    </style>
+</head>
+<body class="bg-black text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-500 overflow-x-hidden">
+
+    <script>
+        // Web Audio API Synthesizer
+        const SoundFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playPop(freq = 650, duration = 0.08) {
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + duration);
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            },
+            playBuild() {
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.12);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.12);
+                } catch(e){}
+            },
+            playWhoosh() {
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(450, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.15);
+                } catch(e){}
+            },
+            playSuccess() {
+                try {
+                    this.init();
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.15, this.ctx.currentTime + i * 0.07);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.07 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + i * 0.07);
+                        osc.stop(this.ctx.currentTime + i * 0.07 + 0.25);
+                    });
+                } catch(e){}
+            }
+        };
+    </script>
+
+    <!-- NAVIGATION DOCK -->
+    <header class="fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+        <nav class="glass-dock rounded-full px-3 py-2 flex items-center gap-2 md:gap-4 shadow-2xl transition-all duration-300">
+            <!-- Logo -->
+            <div class="flex items-center gap-2 pr-2 md:pr-4 border-r border-white/10">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 via-emerald-400 to-purple-500 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-emerald-500/20">
+                    Æ
+                </div>
+                <span class="font-bold text-xs md:text-sm tracking-tight text-white hidden sm:inline">EcoFuturo</span>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
+                <button onclick="switchTab('water')" id="tab-btn-water" class="apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 bg-cyan-500 text-white shadow-lg shadow-cyan-500/30">
+                    <span>💧</span>
+                    <span class="hidden sm:inline">Água & Oceanos</span>
+                </button>
+                <button onclick="switchTab('air')" id="tab-btn-air" class="apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300">
+                    <span>🌬️</span>
+                    <span class="hidden sm:inline">Ar & Atmosfera</span>
+                </button>
+                <button onclick="switchTab('city')" id="tab-btn-city" class="apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300">
+                    <span>🏙️</span>
+                    <span>Eco-City 2D</span>
+                </button>
+            </div>
+
+            <!-- Global Actions -->
+            <div class="flex items-center gap-1 pl-1 md:pl-2 border-l border-white/10">
+                <button onclick="openQRModal()" class="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors" title="QR Code da Campanha">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-4v-4m0 4h.01M6 6h.01M6 12h.01M6 18h.01M12 6h.01M12 12h.01M18 6h.01M18 12h.01"/></svg>
+                </button>
+                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors" title="Alternar Tema">
+                    <svg id="theme-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- MAIN WRAPPER -->
+    <main class="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto min-h-screen">
+
+        <!-- ========================================================================= -->
+        <!-- PÁGINA 1: ÁGUA & OCEANOS -->
+        <!-- ========================================================================= -->
+        <section id="page-water" class="tab-content space-y-16 opacity-100">
+            
+            <!-- Hero Water -->
+            <div class="relative rounded-3xl p-8 md:p-16 glass-panel overflow-hidden ambient-water-bg text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 border border-cyan-500/20 shadow-2xl">
+                <div class="max-w-2xl z-10 space-y-5">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold tracking-wide uppercase">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                        ODS 6 & ODS 14 • Preservação Hídrica
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                        AquaFuturo. <br/>
+                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">
+                            A Dinâmica do Planeta Azul.
+                        </span>
+                    </h1>
+                    <p class="text-slate-300 text-base md:text-lg leading-relaxed font-normal">
+                        Embora 71% da crosta terrestre seja coberta por água, **apenas 0,7%** é potável e acessível. A contaminação por microplásticos, efluentes industriais não tratados e a superexploração de aquíferos ameaçam a segurança alimentar e a biodiversidade global.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-4 justify-center md:justify-start">
+                        <a href="#game-water-section" class="apple-btn px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold text-sm shadow-xl shadow-cyan-500/25 flex items-center gap-2">
+                            <span>🎮</span> Jogar Purificador de Mares
+                        </a>
+                        <a href="#water-text-content" class="apple-btn px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium text-sm">
+                            Ler Artigo Completo
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative z-10 w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+                    <div class="w-full h-full rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-600/40 border border-cyan-300/30 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center shadow-2xl animate-float">
+                        <div class="text-5xl font-black text-cyan-300 tracking-tight">0.7%</div>
+                        <p class="text-xs font-bold text-slate-300 uppercase tracking-widest mt-1">Água Potável Acessível</p>
+                        <div class="mt-4 pt-4 border-t border-white/10 text-xs text-slate-400 leading-normal">
+                            Mais de 2 bilhões de pessoas vivem sem saneamento básico seguro no mundo.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Educational Content Section -->
+            <div id="water-text-content" class="space-y-10">
+                <div class="border-b border-white/10 pb-4">
+                    <h2 class="text-3xl font-extrabold text-white tracking-tight">O Colapso Silencioso dos Ecossistemas Aquáticos</h2>
+                    <p class="text-slate-400 text-sm mt-1">Panorama científico sobre poluição e soluções estruturais</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 leading-relaxed text-slate-300 text-sm md:text-base">
+                    <div class="glass-panel p-8 rounded-3xl space-y-4 border border-white/10">
+                        <h3 class="text-xl font-bold text-cyan-300 flex items-center gap-2">
+                            <span>🧪</span> Microplásticos e Eutrofização
+                        </h3>
+                        <p>
+                            Estudos recentes revelam que mais de 14 milhões de toneladas de microplásticos repousam no assoalho oceânico. Essas partículas absorvem poluentes orgânicos persistentes (POPs) e entram na cadeia alimentar marinha, impactando desde o plâncton até o consumo humano.
+                        </p>
+                        <p>
+                            Além disso, o descarte indiscriminado de fertilizantes nitrogenados e esgoto in natura causa o fenômeno da <strong>eutrofização</strong>: proliferação descontrolada de algas que consomem o oxigênio dissolvido, criando "zonas mortas" desprovidas de vida marinha.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-3xl space-y-4 border border-white/10">
+                        <h3 class="text-xl font-bold text-cyan-300 flex items-center gap-2">
+                            <span>💧</span> O Desafio da Dessalinização e do Reúso
+                        </h3>
+                        <p>
+                            Embora a dessalinização da água do mar seja adotada em regiões áridas, o descarte da salmoura residual superaquecida representa um risco para a vida bentônica local se não for tratado adequadamente.
+                        </p>
+                        <p>
+                            A verdadeira revolução sustentável reside no <strong>reúso direto de águas cinzas</strong> e na filtragem por biorreatores de membrana, capazes de purificar efluentes industriais com até 98% de eficiência e custo energético reduzido.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Propostas Adaptadas com Créditos Explicitados -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-bold text-white tracking-tight">Propostas Estruturais & Citações de Referência</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl border border-cyan-500/30 space-y-3 hover:border-cyan-400 transition-all">
+                            <span class="text-xs font-black text-cyan-400 uppercase">Tecnologia Hídrica</span>
+                            <h4 class="text-base font-bold text-white">Barreiras Flutuantes de Rios</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Intercepção autônoma alimentada por energia solar disposta na foz dos 1.000 rios mais poluentes do mundo.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-cyan-400/90">
+                                Proposta adaptada de Boyan Slat (The Ocean Cleanup)
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-blue-500/30 space-y-3 hover:border-blue-400 transition-all">
+                            <span class="text-xs font-black text-blue-400 uppercase">Preservação Florestal</span>
+                            <h4 class="text-base font-bold text-white">Manutenção dos Rios Voadores</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Proteção da evapotranspiração amazônica para garantir o abastecimento hídrico dos reservatórios do Sul/Sudeste.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-blue-400/90">
+                                Proposta adaptada de Philip Fearnside (INPA / IPCC)
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-teal-500/30 space-y-3 hover:border-teal-400 transition-all">
+                            <span class="text-xs font-black text-teal-400 uppercase">Governança Global</span>
+                            <h4 class="text-base font-bold text-white">Universalização do Saneamento</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Metas vinculantes para zerar o lançamento de esgoto não tratado em corpos d'água até 2030.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-teal-400/90">
+                                Proposta adaptada de ONU Água (UN-Water)
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-purple-500/30 space-y-3 hover:border-purple-400 transition-all">
+                            <span class="text-xs font-black text-purple-400 uppercase">Cidades Conectadas</span>
+                            <h4 class="text-base font-bold text-white">Redes Urbanas Sensoriadas</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Monitoramento via IoT para detecção imediata de vazamentos na rede de distribuição urbana de água.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-purple-400/90">
+                                Proposta adaptada de Manuel Castells (Sociedade em Rede)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME 1: PURIFICADOR DOS MARES -->
+            <div id="game-water-section" class="glass-panel rounded-3xl p-6 md:p-8 border border-cyan-500/30 space-y-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs uppercase font-extrabold text-cyan-400 tracking-wider">Mini-Jogo Arcade 2D</span>
+                        <h2 class="text-2xl font-extrabold text-white">Purificador dos Mares</h2>
+                        <p class="text-slate-400 text-sm">Clique nos resíduos plásticos e barris de tóxicos. Não toque na vida marinha!</p>
+                    </div>
+                    <div class="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-2xl border border-white/10">
+                        <div>
+                            <div class="text-xs text-slate-400">Pontos</div>
+                            <div id="water-game-score" class="text-xl font-black text-cyan-400">0</div>
+                        </div>
+                        <div class="h-8 w-px bg-white/10"></div>
+                        <div>
+                            <div class="text-xs text-slate-400">Poluição</div>
+                            <div id="water-game-pollution" class="text-xl font-black text-emerald-400">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-80 md:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-white/10 shadow-inner">
+                    <canvas id="waterGameCanvas" class="w-full h-full cursor-crosshair"></canvas>
+                    <div id="water-game-overlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-3xl shadow-lg border border-cyan-500/30">
+                            🌊
+                        </div>
+                        <h3 class="text-2xl font-bold text-white">Limpeza Marinha em Tempo Real</h3>
+                        <p class="text-slate-300 text-sm max-w-md">
+                            Elimine garrafas, latas e sacolas plásticas. Mantenha o índice de poluição abaixo de 100%!
+                        </p>
+                        <button onclick="startWaterGame()" class="apple-btn px-8 py-3 rounded-full bg-cyan-500 text-white font-bold text-sm shadow-lg shadow-cyan-500/40">
+                            Iniciar Purificação
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WATER QUIZ & CALCULATOR GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Calculator -->
+                <div class="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-white/10">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>💧</span> Calculadora de Pegada Hídrica Familiar
+                    </h3>
+                    <p class="text-slate-300 text-sm">Ajuste os controles abaixo para estimar o consumo de sua residência:</p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs text-slate-300 flex justify-between font-bold">
+                                <span>Tempo médio de banho/pessoa:</span>
+                                <span id="val-banho" class="text-cyan-400 font-extrabold">10 min</span>
+                            </label>
+                            <input type="range" min="3" max="30" value="10" class="w-full mt-2" oninput="updateWaterCalc()" id="input-banho">
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-slate-300 flex justify-between font-bold">
+                                <span>Uso de lava-louças / torneira:</span>
+                                <span id="val-dentes" class="text-cyan-400 font-extrabold">Moderado</span>
+                            </label>
+                            <select id="input-dentes" onchange="updateWaterCalc()" class="w-full mt-2 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200">
+                                <option value="consciente">Consciente (Torneira fechada ao ensaboar)</option>
+                                <option value="moderado" selected>Moderado (Abertura parcial constante)</option>
+                                <option value="alto">Alto Consumo (Fluxo contínuo sem freio)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs text-slate-300 flex justify-between font-bold">
+                                <span>Refeições com Proteína Animal/semana:</span>
+                                <span id="val-carne" class="text-cyan-400 font-extrabold">4 dias</span>
+                            </label>
+                            <input type="range" min="0" max="7" value="4" class="w-full mt-2" oninput="updateWaterCalc()" id="input-carne">
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs text-slate-400">Estimativa Diária:</div>
+                            <div id="total-water-result" class="text-2xl font-black text-cyan-300">210 Litros/dia</div>
+                        </div>
+                        <button onclick="shareWaterFootprint()" class="apple-btn px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-semibold">
+                            Salvar Diagnóstico
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz -->
+                <div class="glass-panel rounded-3xl p-6 md:p-8 space-y-6 flex flex-col justify-between border border-white/10">
+                    <div>
+                        <span class="text-xs uppercase font-extrabold text-blue-400 tracking-wider">Desafio Científico</span>
+                        <h3 class="text-xl font-bold text-white mt-1">Quiz Interativo da Água</h3>
+                        <p class="text-slate-400 text-sm mt-1">Acumule pontos demonstrando conhecimento sobre ecossistemas hídricos.</p>
+                    </div>
+
+                    <div id="water-quiz-box" class="space-y-4">
+                        <p id="water-quiz-question" class="text-base font-semibold text-slate-200">
+                            Carregando pergunta...
+                        </p>
+                        <div id="water-quiz-options" class="grid grid-cols-1 gap-2"></div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/10 flex justify-between items-center text-xs text-slate-400">
+                        <span>Pontuação Quiz: <strong id="water-quiz-score" class="text-cyan-400">0</strong></span>
+                        <button onclick="nextWaterQuizQuestion()" class="text-cyan-400 hover:underline font-semibold">Próxima →</button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================= -->
+        <!-- PÁGINA 2: AR & ATMOSFERA -->
+        <!-- ========================================================================= -->
+        <section id="page-air" class="tab-content space-y-16 hidden opacity-0">
+            
+            <!-- Hero Air -->
+            <div class="relative rounded-3xl p-8 md:p-16 glass-panel overflow-hidden ambient-air-bg text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 border border-purple-500/20 shadow-2xl">
+                <div class="max-w-2xl z-10 space-y-5">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold tracking-wide uppercase">
+                        <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+                        ODS 13 • Mudança Global do Clima
+                    </div>
+                    <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                        AerFuturo. <br/>
+                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-sky-300 to-indigo-400">
+                            A Dinâmica da Atmosfera.
+                        </span>
+                    </h1>
+                    <p class="text-slate-300 text-base md:text-lg leading-relaxed font-normal">
+                        A poluição do ar causa mais de 7 milhões de mortes prematuras por ano mundialmente. Partículas finas de fumaça (PM2.5) e gases de efeito estufa afetam a regulação térmica global e causam eventos climáticos extremos.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-4 justify-center md:justify-start">
+                        <a href="#game-air-section" class="apple-btn px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-purple-500/25 flex items-center gap-2">
+                            <span>🛸</span> Jogar Capturador de Carbono
+                        </a>
+                        <a href="#aqi-simulator-section" class="apple-btn px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium text-sm">
+                            Simular AQI da Cidade
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative z-10 w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+                    <div class="w-full h-full rounded-full bg-gradient-to-br from-purple-500/20 to-sky-400/30 border border-purple-300/30 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center shadow-2xl animate-float">
+                        <div class="text-5xl font-black text-sky-300 tracking-tight">421</div>
+                        <p class="text-xs font-bold text-slate-300 uppercase tracking-widest mt-1">PPM de CO2 Global</p>
+                        <div class="mt-4 pt-4 border-t border-white/10 text-xs text-slate-400 leading-normal">
+                            Nível mais alto de dióxido de carbono registrado na história da humanidade.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Educational Content Air -->
+            <div class="space-y-10">
+                <div class="border-b border-white/10 pb-4">
+                    <h2 class="text-3xl font-extrabold text-white tracking-tight">O Impacto do Material Particulado na Saúde Global</h2>
+                    <p class="text-slate-400 text-sm mt-1">Compreendendo o PM2.5, emissões industriais e transição para energias limpas</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 leading-relaxed text-slate-300 text-sm md:text-base">
+                    <div class="glass-panel p-8 rounded-3xl space-y-4 border border-white/10">
+                        <h3 class="text-xl font-bold text-purple-300 flex items-center gap-2">
+                            <span>🌫️</span> O Perigo do Material Particulado PM2.5
+                        </h3>
+                        <p>
+                            As partículas ultrafinas com diâmetro inferior a 2,5 micrômetros (PM2.5) originam-se da queima de combustíveis fósseis e incêndios florestais. Por serem minúsculas, penetram profundamente nos alvéolos pulmonares e na corrente sanguínea, aumentando o risco de doenças cardiovasculares e AVC.
+                        </p>
+                        <p>
+                            A transição acelerada para frotas públicas de veículos elétricos e a criação de zonas de emissão zero nas metrópoles reduzem diretamente as internações hospitalares urbanas.
+                        </p>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-3xl space-y-4 border border-white/10">
+                        <h3 class="text-xl font-bold text-purple-300 flex items-center gap-2">
+                            <span>🔥</span> Ponto de Não Retorno (Tipping Point)
+                        </h3>
+                        <p>
+                            A queima de biomassa na bacia amazônica e a emissão contínua de metano em aterros sanitários e na pecuária aceleram o aquecimento dos oceanos. Isso enfraquece a capacidade natural de sequestro de carbono pelas florestas e plânctons.
+                        </p>
+                        <p>
+                            Estratégias de <strong>Captura Direta de Ar (DAC)</strong> e reflorestamento com espécies nativas são fundamentais para neutralizar o CO2 residual nas próximas décadas.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Propostas Adaptadas Air -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-bold text-white tracking-tight">Propostas & Referências em Clima e Atmosfera</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-panel p-6 rounded-2xl border border-purple-500/30 space-y-3 hover:border-purple-400 transition-all">
+                            <span class="text-xs font-black text-purple-400 uppercase">Clima Amazônico</span>
+                            <h4 class="text-base font-bold text-white">Contenção da Savanização</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Preservação da cobertura florestal para mitigar o colapso do ciclo hídrico do continente sul-americano.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-purple-400/90">
+                                Proposta adaptada de Carlos Nobre (IEA-USP / Climate Science)
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-sky-500/30 space-y-3 hover:border-sky-400 transition-all">
+                            <span class="text-xs font-black text-sky-400 uppercase">Saúde Pública</span>
+                            <h4 class="text-base font-bold text-white">Limites Rígidos de Ar Urbano</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Redução da média anual de PM2.5 para menos de 5 µg/m³ recomendados para prevenir óbitos prematuros.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-sky-400/90">
+                                Proposta adaptada da Organização Mundial da Saúde (OMS)
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-indigo-500/30 space-y-3 hover:border-indigo-400 transition-all">
+                            <span class="text-xs font-black text-indigo-400 uppercase">Futuro Humano</span>
+                            <h4 class="text-base font-bold text-white">Cooperação Pós-Carbono</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Reorientação dos investimentos globais de infraestrutura para energias de emissão zero antes que os custos climáticos inviabilizem economias.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-indigo-400/90">
+                                Proposta adaptada de Yuval Noah Harari
+                            </div>
+                        </div>
+
+                        <div class="glass-panel p-6 rounded-2xl border border-emerald-500/30 space-y-3 hover:border-emerald-400 transition-all">
+                            <span class="text-xs font-black text-emerald-400 uppercase">Ação Ambiental</span>
+                            <h4 class="text-base font-bold text-white">Campanha Ar Limpo para Todos</h4>
+                            <p class="text-slate-300 text-xs leading-relaxed">
+                                Implementação de sistemas de filtragem industrial e transição frota para hidrogênio verde e mobilidade elétrica.
+                            </p>
+                            <div class="pt-2 border-t border-white/10 text-[11px] font-semibold text-emerald-400/90">
+                                Proposta adaptada do Programa das Nações Unidas para o Meio Ambiente (UNEP)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SIMULADOR AQI -->
+            <div id="aqi-simulator-section" class="glass-panel rounded-3xl p-6 md:p-8 space-y-6 border border-purple-500/30 shadow-2xl">
+                <div>
+                    <span class="text-xs uppercase font-extrabold text-sky-400 tracking-wider">Ferramenta Simuladora</span>
+                    <h3 class="text-2xl font-extrabold text-white">Simulador do Índice de Qualidade do Ar (AQI)</h3>
+                    <p class="text-slate-400 text-sm">Arraste o controle e veja os efeitos imediatos no ar e na paisagem urbana.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs text-slate-300 flex justify-between font-bold">
+                                <span>Índice AQI Nível:</span>
+                                <span id="aqi-val-display" class="text-emerald-400 font-extrabold">25 (Excelente)</span>
+                            </label>
+                            <input type="range" min="10" max="350" value="25" class="w-full mt-3" id="aqi-slider" oninput="updateAQISimulator()">
+                        </div>
+
+                        <div id="aqi-status-card" class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                            <h4 id="aqi-status-title" class="text-base font-bold text-emerald-400">Ar Limpo & Seguro</h4>
+                            <p id="aqi-status-desc" class="text-xs text-slate-300 leading-relaxed">Sem restrições para a população. Nível ideal para saúde cardiovascular e pulmonar.</p>
+                        </div>
+                    </div>
+
+                    <div id="aqi-visual-box" class="relative lg:col-span-2 h-56 rounded-2xl bg-slate-900 border border-white/10 overflow-hidden flex flex-col justify-end p-6 transition-all duration-500">
+                        <div class="absolute inset-0 opacity-40 flex items-end justify-center pointer-events-none">
+                            <svg class="w-full h-32 text-slate-700" fill="currentColor" viewBox="0 0 500 150">
+                                <rect x="20" y="40" width="40" height="110"/>
+                                <rect x="70" y="10" width="50" height="140"/>
+                                <rect x="130" y="60" width="35" height="90"/>
+                                <rect x="180" y="20" width="60" height="130"/>
+                                <rect x="250" y="50" width="45" height="100"/>
+                                <rect x="310" y="15" width="55" height="135"/>
+                                <rect x="380" y="70" width="40" height="80"/>
+                            </svg>
+                        </div>
+                        <div id="aqi-smog-overlay" class="absolute inset-0 bg-yellow-900/0 backdrop-blur-0 transition-all duration-500"></div>
+
+                        <div class="relative z-10 flex justify-between items-center bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10">
+                            <div>
+                                <span class="text-xs text-slate-400 block">Concentração Estimada PM2.5</span>
+                                <span id="aqi-pm25-val" class="text-lg font-bold text-white">6.2 µg/m³</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 block">Recomendação Sanitária</span>
+                                <span id="aqi-medical-rec" class="text-xs font-semibold text-emerald-400">Condição Favorável</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAME 2: CAPTURADOR DE CARBONO -->
+            <div id="game-air-section" class="glass-panel rounded-3xl p-6 md:p-8 border border-purple-500/30 space-y-6 shadow-2xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs uppercase font-extrabold text-purple-400 tracking-wider">Mini-Jogo Arcade 2D</span>
+                        <h2 class="text-2xl font-extrabold text-white">Capturador de Carbono Atmosférico</h2>
+                        <p class="text-slate-400 text-sm">Mova seu drone com o mouse/toque para aspirar as fumaças industriais.</p>
+                    </div>
+                    <div class="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-2xl border border-white/10">
+                        <div>
+                            <div class="text-xs text-slate-400">Carbono Salvo</div>
+                            <div id="air-game-score" class="text-xl font-black text-purple-400">0 kg</div>
+                        </div>
+                        <div class="h-8 w-px bg-white/10"></div>
+                        <div>
+                            <div class="text-xs text-slate-400">Pureza do Ar</div>
+                            <div id="air-game-purity" class="text-xl font-black text-sky-400">100%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative w-full h-80 md:h-96 rounded-2xl overflow-hidden bg-slate-950 border border-white/10 shadow-inner">
+                    <canvas id="airGameCanvas" class="w-full h-full cursor-none"></canvas>
+                    <div id="air-game-overlay" class="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl shadow-lg border border-purple-500/30">
+                            🛸
+                        </div>
+                        <h3 class="text-2xl font-bold text-white">Pilote o Drone Ecológico</h3>
+                        <p class="text-slate-300 text-sm max-w-md">
+                            Elimine fuligem tóxica e mantenha os céus limpos sobre a metrópole!
+                        </p>
+                        <button onclick="startAirGame()" class="apple-btn px-8 py-3 rounded-full bg-purple-600 text-white font-bold text-sm shadow-lg shadow-purple-500/40">
+                            Decolar Drone
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================================================= -->
+        <!-- PÁGINA 3: ECO-CITY BUILDER 2D (CIDADE PERFEITA) -->
+        <!-- ========================================================================= -->
+        <section id="page-city" class="tab-content space-y-8 hidden opacity-0">
+            
+            <!-- Hero Eco-City Header -->
+            <div class="relative rounded-3xl p-6 md:p-10 glass-panel border border-emerald-500/30 ambient-city-bg flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+                <div class="space-y-2 text-center md:text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                        <span>🌱</span> Simulador 2D de Gestão Sustentável
+                    </div>
+                    <h1 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+                        Eco-City Builder <span class="text-emerald-400">2D</span>
+                    </h1>
+                    <p class="text-slate-300 text-sm md:text-base max-w-xl">
+                        Construa a utopia ecológica definitiva! Equilibre o suprimento de água limpa, energia renovável, controle a poluição do ar e mantenha seus cidadãos felizes.
+                    </p>
+                </div>
+
+                <!-- Live City Stats Bar -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/80 p-4 rounded-2xl border border-white/10 w-full md:w-auto">
+                    <div class="text-center px-2">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Orçamento</span>
+                        <span id="city-money" class="text-base font-black text-emerald-400">$2,500</span>
+                    </div>
+                    <div class="text-center px-2">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">População</span>
+                        <span id="city-pop" class="text-base font-black text-sky-400">120 hab</span>
+                    </div>
+                    <div class="text-center px-2">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Qualidade Água</span>
+                        <span id="city-water-q" class="text-base font-black text-cyan-400">85%</span>
+                    </div>
+                    <div class="text-center px-2">
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Pureza do Ar</span>
+                        <span id="city-air-q" class="text-base font-black text-purple-400">90%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Control Toolbar & Canvas Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <!-- Building Palette Toolbar -->
+                <div class="glass-panel p-5 rounded-3xl space-y-4 border border-white/10 lg:col-span-1 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider border-b border-white/10 pb-2 flex justify-between items-center">
+                            <span>Painel de Obras</span>
+                            <span id="selected-building-lbl" class="text-xs text-emerald-400 font-semibold">Seleção: Bairro</span>
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="selectBuilding('house')" id="btn-build-house" class="apple-btn p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-left hover:bg-emerald-500/30">
+                                <div class="text-lg">🏡</div>
+                                <div class="text-xs font-bold text-white">Bairro Ecológico</div>
+                                <div class="text-[10px] text-slate-400">$150 | +Pop</div>
+                            </button>
+
+                            <button onclick="selectBuilding('solar')" id="btn-build-solar" class="apple-btn p-3 rounded-2xl bg-slate-900 border border-white/10 text-left hover:bg-white/10">
+                                <div class="text-lg">☀️</div>
+                                <div class="text-xs font-bold text-white">Usina Solar</div>
+                                <div class="text-[10px] text-slate-400">$200 | +Ar</div>
+                            </button>
+
+                            <button onclick="selectBuilding('eta')" id="btn-build-eta" class="apple-btn p-3 rounded-2xl bg-slate-900 border border-white/10 text-left hover:bg-white/10">
+                                <div class="text-lg">💧</div>
+                                <div class="text-xs font-bold text-white">Tratamento Água</div>
+                                <div class="text-[10px] text-slate-400">$250 | +Água</div>
+                            </button>
+
+                            <button onclick="selectBuilding('park')" id="btn-build-park" class="apple-btn p-3 rounded-2xl bg-slate-900 border border-white/10 text-left hover:bg-white/10">
+                                <div class="text-lg">🌳</div>
+                                <div class="text-xs font-bold text-white">Parque Urbano</div>
+                                <div class="text-[10px] text-slate-400">$100 | +Feliz</div>
+                            </button>
+
+                            <button onclick="selectBuilding('factory')" id="btn-build-factory" class="apple-btn p-3 rounded-2xl bg-slate-900 border border-white/10 text-left hover:bg-white/10">
+                                <div class="text-lg">🏭</div>
+                                <div class="text-xs font-bold text-white">Indústria Poluidora</div>
+                                <div class="text-[10px] text-slate-400">$300 | ++$$ -Ar</div>
+                            </button>
+
+                            <button onclick="selectBuilding('demolish')" id="btn-build-demolish" class="apple-btn p-3 rounded-2xl bg-red-950/40 border border-red-500/30 text-left hover:bg-red-900/40">
+                                <div class="text-lg">🚜</div>
+                                <div class="text-xs font-bold text-red-300">Demolir</div>
+                                <div class="text-[10px] text-red-400/80">Recupera $50</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Game Event Log -->
+                    <div class="pt-4 border-t border-white/10 space-y-2">
+                        <div class="flex justify-between text-xs text-slate-400">
+                            <span>Diário da Cidade</span>
+                            <span id="city-cycle-timer" class="text-emerald-400 font-bold">Ciclo: 1</span>
+                        </div>
+                        <div id="city-news-feed" class="text-xs bg-slate-950 p-3 rounded-xl border border-white/10 text-slate-300 h-24 overflow-y-auto space-y-1">
+                            <p class="text-emerald-400">• Cidade fundada com sucesso!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main City Grid Canvas -->
+                <div class="glass-panel p-4 rounded-3xl border border-white/10 lg:col-span-3 flex flex-col items-center justify-center relative overflow-hidden bg-slate-950/90 shadow-2xl">
+                    <canvas id="cityBuilderCanvas" class="w-full h-[450px] cursor-pointer rounded-2xl border border-white/10"></canvas>
+                    
+                    <!-- Overlay Controls on Canvas -->
+                    <div class="absolute bottom-6 left-6 right-6 flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10">
+                        <span class="text-xs text-slate-300 font-semibold">Clique no mapa para construir ou demolir</span>
+                        <div class="flex gap-2">
+                            <button onclick="resetCityGame()" class="apple-btn px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200">
+                                Reiniciar Mapa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eco City Achievements Section -->
+            <div class="glass-panel p-6 rounded-3xl border border-white/10 space-y-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🏆</span> Conquistas Ecológicas da Metrópole
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div id="achieve-1" class="p-4 rounded-2xl bg-white/5 border border-white/10 opacity-50 space-y-1">
+                        <div class="font-bold text-slate-300">Guardião das Águas</div>
+                        <p class="text-slate-400">Atingir 95% de Qualidade da Água</p>
+                    </div>
+                    <div id="achieve-2" class="p-4 rounded-2xl bg-white/5 border border-white/10 opacity-50 space-y-1">
+                        <div class="font-bold text-slate-300">Metrópole Solar</div>
+                        <p class="text-slate-400">Construir pelo menos 3 Usinas Solares</p>
+                    </div>
+                    <div id="achieve-3" class="p-4 rounded-2xl bg-white/5 border border-white/10 opacity-50 space-y-1">
+                        <div class="font-bold text-slate-300">Utopia Verde</div>
+                        <p class="text-slate-400">População > 300 com Ar e Água acima de 80%</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- GLOBAL QR CODE MODAL -->
+    <div id="qr-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel p-6 md:p-8 rounded-3xl border border-white/20 max-w-md w-full space-y-6 relative shadow-2xl">
+            <button onclick="closeQRModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl mx-auto border border-emerald-500/30">
+                    📲
+                </div>
+                <h3 class="text-2xl font-black text-white">QR Code da Campanha</h3>
+                <p class="text-xs text-slate-300">Personalize e compartilhe a conscientização ambiental com um clique.</p>
+            </div>
+
+            <div class="space-y-3">
+                <input type="text" id="qr-modal-input" value="https://ecofuturo.org/manifesto" placeholder="Sua mensagem ou link..." class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500" oninput="renderModalQR()">
+                
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-400 block mb-1">Cor Principal</label>
+                        <input type="color" id="qr-modal-color" value="#10b981" class="w-full h-9 rounded-xl bg-transparent cursor-pointer" onchange="renderModalQR()">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-[10px] text-slate-400 block mb-1">Fundo</label>
+                        <input type="color" id="qr-modal-bg" value="#000000" class="w-full h-9 rounded-xl bg-transparent cursor-pointer" onchange="renderModalQR()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center p-4 bg-slate-950 rounded-2xl border border-white/10">
+                <div id="qr-modal-canvas-box"></div>
+                <div class="mt-4 flex gap-2 w-full">
+                    <button onclick="shareWhatsApp()" class="apple-btn flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1.5">
+                        <span>💬</span> WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-white/10 bg-black/80 backdrop-blur-xl py-8 text-center text-xs text-slate-500 space-y-2">
+        <p>EcoFuturo 3.0 • Design Inspirado na Apple & ODS ONU</p>
+        <p class="text-slate-600">Propostas adaptadas com citações explícitas de Boyan Slat, Philip Fearnside, Carlos Nobre, OMS e Yuval Harari.</p>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT APP & GAMES ENGINE -->
+    <!-- ========================================================================= -->
+    <script>
+        // 1. NAVIGATION SYSTEM
+        function switchTab(tab) {
+            SoundFX.playWhoosh();
+            const waterPage = document.getElementById('page-water');
+            const airPage = document.getElementById('page-air');
+            const cityPage = document.getElementById('page-city');
+
+            const btnWater = document.getElementById('tab-btn-water');
+            const btnAir = document.getElementById('tab-btn-air');
+            const btnCity = document.getElementById('tab-btn-city');
+
+            // Hide all
+            [waterPage, airPage, cityPage].forEach(p => p.classList.add('hidden', 'opacity-0'));
+
+            if (tab === 'water') {
+                waterPage.classList.remove('hidden');
+                setTimeout(() => waterPage.classList.remove('opacity-0'), 20);
+                btnWater.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 bg-cyan-500 text-white shadow-lg shadow-cyan-500/30";
+                btnAir.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+                btnCity.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+            } else if (tab === 'air') {
+                airPage.classList.remove('hidden');
+                setTimeout(() => airPage.classList.remove('opacity-0'), 20);
+                btnAir.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 bg-purple-600 text-white shadow-lg shadow-purple-500/30";
+                btnWater.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+                btnCity.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+            } else if (tab === 'city') {
+                cityPage.classList.remove('hidden');
+                setTimeout(() => cityPage.classList.remove('opacity-0'), 20);
+                btnCity.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 bg-emerald-500 text-white shadow-lg shadow-emerald-500/30";
+                btnWater.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+                btnAir.className = "apple-btn flex items-center gap-1.5 px-3 md:px-4 py-1.5 rounded-full text-xs font-medium text-slate-300 hover:text-white transition-all duration-300";
+                
+                // Initialize City Canvas if not initialized
+                initCityCanvas();
+            }
+        }
+
+        // 2. THEME SWITCH
+        let isDark = true;
+        function toggleTheme() {
+            SoundFX.playPop();
+            isDark = !isDark;
+            document.documentElement.classList.toggle('dark', isDark);
+            document.documentElement.classList.toggle('light', !isDark);
+            if (!isDark) {
+                document.body.classList.remove('bg-black', 'text-slate-100');
+                document.body.classList.add('bg-slate-50', 'text-slate-900');
+            } else {
+                document.body.classList.remove('bg-slate-50', 'text-slate-900');
+                document.body.classList.add('bg-black', 'text-slate-100');
+            }
+        }
+
+        // 3. GAME 1: PURIFICADOR DOS MARES
+        let waterCanvas, waterCtx;
+        let waterGameRunning = false;
+        let waterScore = 0;
+        let waterPollution = 30;
+        let waterItems = [];
+
+        function startWaterGame() {
+            SoundFX.playWhoosh();
+            document.getElementById('water-game-overlay').classList.add('hidden');
+            waterCanvas = document.getElementById('waterGameCanvas');
+            waterCtx = waterCanvas.getContext('2d');
+            waterCanvas.width = waterCanvas.offsetWidth;
+            waterCanvas.height = waterCanvas.offsetHeight;
+
+            waterScore = 0;
+            waterPollution = 25;
+            waterItems = [];
+            waterGameRunning = true;
+            waterCanvas.onclick = handleWaterClick;
+
+            requestAnimationFrame(waterGameLoop);
+        }
+
+        function handleWaterClick(e) {
+            if (!waterGameRunning) return;
+            const rect = waterCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            for (let i = waterItems.length - 1; i >= 0; i--) {
+                const item = waterItems[i];
+                const dist = Math.hypot(clickX - item.x, clickY - item.y);
+                if (dist < item.radius) {
+                    if (item.type === 'plastic') {
+                        SoundFX.playPop(850);
+                        waterScore += 10;
+                        waterPollution = Math.max(0, waterPollution - 4);
+                    } else if (item.type === 'fish') {
+                        SoundFX.playPop(200);
+                        waterScore = Math.max(0, waterScore - 15);
+                        waterPollution = Math.min(100, waterPollution + 8);
+                    }
+                    waterItems.splice(i, 1);
+                    break;
+                }
+            }
+            document.getElementById('water-game-score').innerText = waterScore;
+            document.getElementById('water-game-pollution').innerText = waterPollution + '%';
+        }
+
+        function waterGameLoop() {
+            if (!waterGameRunning) return;
+            waterCtx.clearRect(0, 0, waterCanvas.width, waterCanvas.height);
+
+            const grad = waterCtx.createLinearGradient(0, 0, 0, waterCanvas.height);
+            grad.addColorStop(0, '#0284c7');
+            grad.addColorStop(1, '#0369a1');
+            waterCtx.fillStyle = grad;
+            waterCtx.fillRect(0, 0, waterCanvas.width, waterCanvas.height);
+
+            if (Math.random() < 0.04) {
+                waterItems.push({
+                    x: Math.random() * (waterCanvas.width - 40) + 20,
+                    y: waterCanvas.height + 30,
+                    radius: 22,
+                    speed: Math.random() * 2 + 1.5,
+                    type: Math.random() > 0.3 ? 'plastic' : 'fish',
+                    emoji: Math.random() > 0.3 ? (Math.random() > 0.5 ? '🥤' : '🧴') : '🐠'
+                });
+            }
+
+            for (let i = waterItems.length - 1; i >= 0; i--) {
+                const item = waterItems[i];
+                item.y -= item.speed;
+
+                waterCtx.font = '26px sans-serif';
+                waterCtx.textAlign = 'center';
+                waterCtx.textBaseline = 'middle';
+                waterCtx.fillText(item.emoji, item.x, item.y);
+
+                if (item.y < -30) {
+                    if (item.type === 'plastic') {
+                        waterPollution = Math.min(100, waterPollution + 3);
+                        document.getElementById('water-game-pollution').innerText = waterPollution + '%';
+                    }
+                    waterItems.splice(i, 1);
+                }
+            }
+
+            if (waterPollution >= 100) {
+                waterGameRunning = false;
+                alert("O nível de poluição atingiu 100%! Tente novamente para purificar o oceano.");
+                document.getElementById('water-game-overlay').classList.remove('hidden');
+                return;
+            }
+
+            requestAnimationFrame(waterGameLoop);
+        }
+
+        // 4. GAME 2: CAPTURADOR DE CARBONO
+        let airCanvas, airCtx;
+        let airGameRunning = false;
+        let airScore = 0;
+        let airPurity = 100;
+        let dronePos = { x: 200, y: 200 };
+        let smokeParticles = [];
+
+        function startAirGame() {
+            SoundFX.playWhoosh();
+            document.getElementById('air-game-overlay').classList.add('hidden');
+            airCanvas = document.getElementById('airGameCanvas');
+            airCtx = airCanvas.getContext('2d');
+            airCanvas.width = airCanvas.offsetWidth;
+            airCanvas.height = airCanvas.offsetHeight;
+
+            airScore = 0;
+            airPurity = 100;
+            smokeParticles = [];
+            airGameRunning = true;
+
+            airCanvas.onmousemove = (e) => {
+                const rect = airCanvas.getBoundingClientRect();
+                dronePos.x = e.clientX - rect.left;
+                dronePos.y = e.clientY - rect.top;
+            };
+
+            requestAnimationFrame(airGameLoop);
+        }
+
+        function airGameLoop() {
+            if (!airGameRunning) return;
+            airCtx.clearRect(0, 0, airCanvas.width, airCanvas.height);
+
+            airCtx.fillStyle = '#0f172a';
+            airCtx.fillRect(0, 0, airCanvas.width, airCanvas.height);
+
+            if (Math.random() < 0.05) {
+                smokeParticles.push({
+                    x: Math.random() * airCanvas.width,
+                    y: -20,
+                    radius: Math.random() * 15 + 10,
+                    speed: Math.random() * 1.5 + 1,
+                });
+            }
+
+            // Draw Drone
+            airCtx.beginPath();
+            airCtx.arc(dronePos.x, dronePos.y, 25, 0, Math.PI * 2);
+            airCtx.fillStyle = 'rgba(168, 85, 247, 0.4)';
+            airCtx.fill();
+            airCtx.strokeStyle = '#a855f7';
+            airCtx.lineWidth = 2;
+            airCtx.stroke();
+            airCtx.font = '20px sans-serif';
+            airCtx.textAlign = 'center';
+            airCtx.textBaseline = 'middle';
+            airCtx.fillText('🛸', dronePos.x, dronePos.y);
+
+            for (let i = smokeParticles.length - 1; i >= 0; i--) {
+                const p = smokeParticles[i];
+                p.y += p.speed;
+
+                airCtx.beginPath();
+                airCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                airCtx.fillStyle = 'rgba(100, 116, 139, 0.7)';
+                airCtx.fill();
+
+                const dist = Math.hypot(dronePos.x - p.x, dronePos.y - p.y);
+                if (dist < 35) {
+                    SoundFX.playPop(1200);
+                    airScore += 5;
+                    smokeParticles.splice(i, 1);
+                    document.getElementById('air-game-score').innerText = airScore + ' kg';
+                    continue;
+                }
+
+                if (p.y > airCanvas.height + 20) {
+                    airPurity = Math.max(0, airPurity - 2);
+                    document.getElementById('air-game-purity').innerText = airPurity + '%';
+                    smokeParticles.splice(i, 1);
+                }
+            }
+
+            if (airPurity <= 0) {
+                airGameRunning = false;
+                alert("A névoa tóxica encobriu a cidade! Reinicie o drone de sucção.");
+                document.getElementById('air-game-overlay').classList.remove('hidden');
+                return;
+            }
+
+            requestAnimationFrame(airGameLoop);
+        }
+
+        // 5. WATER CALCULATOR & QUIZ
+        function updateWaterCalc() {
+            const banho = parseInt(document.getElementById('input-banho').value);
+            const dentes = document.getElementById('input-dentes').value;
+            const carne = parseInt(document.getElementById('input-carne').value);
+
+            document.getElementById('val-banho').innerText = banho + ' min';
+            document.getElementById('val-carne').innerText = carne + ' dias';
+
+            let factor = dentes === 'consciente' ? 1 : (dentes === 'moderado' ? 2 : 4);
+            let total = (banho * 12) + (factor * 15) + (carne * 35);
+            document.getElementById('total-water-result').innerText = total + ' Litros/dia';
+        }
+
+        function shareWaterFootprint() {
+            confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+            SoundFX.playSuccess();
+            alert("Diagnóstico de Consumo Hídrico salvo!");
+        }
+
+        const waterQuizData = [
+            {
+                q: "Qual porcentagem de água potável no planeta está prontamente acessível para consumo humano?",
+                opts: ["Aproximadamente 20%", "Menos de 1% (0,7%)", "Cerca de 10%", "5%"],
+                correct: 1
+            },
+            {
+                q: "O que é o fenômeno da Eutrofização nos ecossistemas aquáticos?",
+                opts: ["Proliferação de algas por excesso de nutrientes que consome o oxigênio da água", "Evaporação acelerada dos rios em épocas de seca", "Acúmulo de sal nas margens oceânicas", "Desalinização natural promovida pelo sol"],
+                correct: 0
+            }
+        ];
+        let currentWaterQuizIndex = 0;
+        let waterQuizScore = 0;
+
+        function renderWaterQuiz() {
+            const quiz = waterQuizData[currentWaterQuizIndex];
+            document.getElementById('water-quiz-question').innerText = quiz.q;
+            const container = document.getElementById('water-quiz-options');
+            container.innerHTML = '';
+
+            quiz.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-200 transition-all";
+                btn.innerText = opt;
+                btn.onclick = () => answerWaterQuiz(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function answerWaterQuiz(selected) {
+            const quiz = waterQuizData[currentWaterQuizIndex];
+            if (selected === quiz.correct) {
+                SoundFX.playSuccess();
+                waterQuizScore += 50;
+                document.getElementById('water-quiz-score').innerText = waterQuizScore;
+                confetti({ particleCount: 40, spread: 50 });
+            } else {
+                SoundFX.playPop(200);
+            }
+            nextWaterQuizQuestion();
+        }
+
+        function nextWaterQuizQuestion() {
+            currentWaterQuizIndex = (currentWaterQuizIndex + 1) % waterQuizData.length;
+            renderWaterQuiz();
+        }
+
+        // 6. AQI SIMULATOR LOGIC
+        function updateAQISimulator() {
+            const val = parseInt(document.getElementById('aqi-slider').value);
+            const display = document.getElementById('aqi-val-display');
+            const title = document.getElementById('aqi-status-title');
+            const desc = document.getElementById('aqi-status-desc');
+            const boxCard = document.getElementById('aqi-status-card');
+            const smogOverlay = document.getElementById('aqi-smog-overlay');
+            const pm25 = document.getElementById('aqi-pm25-val');
+            const rec = document.getElementById('aqi-medical-rec');
+
+            pm25.innerText = (val * 0.22).toFixed(1) + ' µg/m³';
+
+            if (val <= 50) {
+                display.innerText = val + ' (Excelente)';
+                display.className = "text-emerald-400 font-extrabold";
+                title.innerText = "Ar Limpo & Seguro";
+                desc.innerText = "Sem restrições sanitárias. Excelente para a saúde pulmonar de crianças e idosos.";
+                rec.innerText = "Prática de exercícios ao ar livre liberada";
+                rec.className = "text-xs font-semibold text-emerald-400";
+                boxCard.className = "p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1";
+                smogOverlay.style.backgroundColor = "rgba(0,0,0,0)";
+                smogOverlay.style.backdropFilter = "blur(0px)";
+            } else if (val <= 150) {
+                display.innerText = val + ' (Moderado / Alerta)';
+                display.className = "text-yellow-400 font-extrabold";
+                title.innerText = "Atenção: Qualidade Intermediária";
+                desc.innerText = "Grupos sensíveis podem apresentar irritação nos olhos e vias aéreas superiores.";
+                rec.innerText = "Evitar exercícios intensos nas vias de alto tráfego";
+                rec.className = "text-xs font-semibold text-yellow-400";
+                boxCard.className = "p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 space-y-1";
+                smogOverlay.style.backgroundColor = "rgba(180, 83, 9, 0.22)";
+                smogOverlay.style.backdropFilter = "blur(2px)";
+            } else {
+                display.innerText = val + ' (CRÍTICO / INSALUBRE)';
+                display.className = "text-red-500 font-extrabold";
+                title.innerText = "Emergência de Poluição do Ar";
+                desc.innerText = "Presença crítica de material particulado fino. Risco aumentado para doenças cardiorrespiratórias.";
+                rec.innerText = "Usar máscaras PFF2 e fechar janelas residenciais";
+                rec.className = "text-xs font-semibold text-red-400";
+                boxCard.className = "p-4 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-1";
+                smogOverlay.style.backgroundColor = "rgba(120, 53, 15, 0.55)";
+                smogOverlay.style.backdropFilter = "blur(5px)";
+            }
+        }
+
+        // =========================================================================
+        // 7. ECO-CITY BUILDER 2D GAME ENGINE
+        // =========================================================================
+        let cityCanvas, cityCtx;
+        const GRID_COLS = 8;
+        const GRID_ROWS = 6;
+        let grid = [];
+        let selectedType = 'house';
+
+        // City Stats State
+        let cityMoney = 2500;
+        let cityPop = 120;
+        let cityWaterQuality = 85;
+        let cityAirQuality = 90;
+        let cityCycle = 1;
+        let gameTimerInterval = null;
+
+        const BUILDINGS = {
+            empty: { name: "Vazio", cost: 0, icon: "", pop: 0, waterImpact: 0, airImpact: 0, income: 0 },
+            house: { name: "Bairro Ecológico", cost: 150, icon: "🏡", pop: 40, waterImpact: -2, airImpact: -1, income: 15 },
+            solar: { name: "Usina Solar", cost: 200, icon: "☀️", pop: 0, waterImpact: 0, airImpact: +4, income: 5 },
+            eta: { name: "Estação de Tratamento Água", cost: 250, icon: "💧", pop: 0, waterImpact: +8, airImpact: 0, income: -5 },
+            park: { name: "Parque Urbano", cost: 100, icon: "🌳", pop: 0, waterImpact: +2, airImpact: +3, income: 0 },
+            factory: { name: "Indústria Poluidora", cost: 300, icon: "🏭", pop: 10, waterImpact: -12, airImpact: -10, income: 60 }
+        };
+
+        function selectBuilding(type) {
+            SoundFX.playPop(700);
+            selectedType = type;
+            const names = {
+                house: "Bairro Ecológico",
+                solar: "Usina Solar",
+                eta: "Tratamento de Água",
+                park: "Parque Urbano",
+                factory: "Indústria Poluidora",
+                demolish: "Demolir"
+            };
+            document.getElementById('selected-building-lbl').innerText = "Seleção: " + names[type];
+        }
+
+        function initCityCanvas() {
+            if (cityCanvas) return;
+            cityCanvas = document.getElementById('cityBuilderCanvas');
+            cityCtx = cityCanvas.getContext('2d');
+            cityCanvas.width = cityCanvas.offsetWidth;
+            cityCanvas.height = cityCanvas.offsetHeight;
+
+            // Initialize Grid
+            grid = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                let row = [];
+                for (let c = 0; c < GRID_COLS; c++) {
+                    row.push('empty');
+                }
+                grid.push(row);
+            }
+
+            // Pre-place starting buildings
+            grid[1][1] = 'house';
+            grid[1][2] = 'park';
+            grid[2][2] = 'solar';
+
+            cityCanvas.onclick = handleCityCanvasClick;
+
+            // Start Cycle Timer
+            if (!gameTimerInterval) {
+                gameTimerInterval = setInterval(cityGameLoopTick, 4000);
+            }
+
+            drawCityGrid();
+        }
+
+        function handleCityCanvasClick(e) {
+            const rect = cityCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const cellW = cityCanvas.width / GRID_COLS;
+            const cellH = cityCanvas.height / GRID_ROWS;
+
+            const col = Math.floor(clickX / cellW);
+            const row = Math.floor(clickY / cellH);
+
+            if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+                if (selectedType === 'demolish') {
+                    if (grid[row][col] !== 'empty') {
+                        SoundFX.playWhoosh();
+                        grid[row][col] = 'empty';
+                        cityMoney += 50;
+                        logCityNews("Estrutura demolida. +$50 recuperados.");
+                    }
+                } else {
+                    const b = BUILDINGS[selectedType];
+                    if (cityMoney >= b.cost) {
+                        SoundFX.playBuild();
+                        cityMoney -= b.cost;
+                        grid[row][col] = selectedType;
+                        logCityNews("Construído: " + b.name + " (-$" + b.cost + ")");
+                    } else {
+                        SoundFX.playPop(150);
+                        logCityNews("⚠️️ Fundos insuficientes para construir " + b.name);
+                    }
+                }
+                updateCityStats();
+                drawCityGrid();
+            }
+        }
+
+        function updateCityStats() {
+            let tempPop = 0;
+            let tempWater = 80;
+            let tempAir = 85;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const type = grid[r][c];
+                    if (type !== 'empty') {
+                        const b = BUILDINGS[type];
+                        tempPop += b.pop;
+                        tempWater += b.waterImpact;
+                        tempAir += b.airImpact;
+                    }
+                }
+            }
+
+            cityPop = tempPop;
+            cityWaterQuality = Math.max(0, Math.min(100, tempWater));
+            cityAirQuality = Math.max(0, Math.min(100, tempAir));
+
+            // UI Updates
+            document.getElementById('city-money').innerText = '$' + cityMoney;
+            document.getElementById('city-pop').innerText = cityPop + ' hab';
+            document.getElementById('city-water-q').innerText = cityWaterQuality + '%';
+            document.getElementById('city-air-q').innerText = cityAirQuality + '%';
+
+            checkAchievements();
+        }
+
+        function cityGameLoopTick() {
+            cityCycle++;
+            document.getElementById('city-cycle-timer').innerText = "Ciclo: " + cityCycle;
+
+            // Calculate Income
+            let netIncome = 0;
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const type = grid[r][c];
+                    if (type !== 'empty') {
+                        netIncome += BUILDINGS[type].income;
+                    }
+                }
+            }
+
+            cityMoney += netIncome;
+            if (netIncome > 0) {
+                logCityNews("💰 Coleta de impostos: +$" + netIncome);
+            }
+
+            // Random Events
+            if (Math.random() < 0.25) {
+                const events = [
+                    { msg: "🌧️ Chuva de Primavera purifica o ar! (+5% Ar)", air: 5 },
+                    { msg: "☀️ Onda de Calor aumenta consumo de água! (-4% Água)", water: -4 },
+                    { msg: "🌱 Campanha de Reciclagem bem sucedida! (+ $100)", money: 100 }
+                ];
+                const ev = events[Math.floor(Math.random() * events.length)];
+                logCityNews(ev.msg);
+                if (ev.money) cityMoney += ev.money;
+                if (ev.air) cityAirQuality = Math.min(100, cityAirQuality + ev.air);
+                if (ev.water) cityWaterQuality = Math.max(0, cityWaterQuality + ev.water);
+            }
+
+            updateCityStats();
+            drawCityGrid();
+        }
+
+        function logCityNews(txt) {
+            const feed = document.getElementById('city-news-feed');
+            const p = document.createElement('p');
+            p.innerText = "• " + txt;
+            feed.prepend(p);
+        }
+
+        function drawCityGrid() {
+            if (!cityCtx) return;
+            cityCtx.clearRect(0, 0, cityCanvas.width, cityCanvas.height);
+
+            const cellW = cityCanvas.width / GRID_COLS;
+            const cellH = cityCanvas.height / GRID_ROWS;
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const x = c * cellW;
+                    const y = r * cellH;
+
+                    // Grid Background Cell
+                    cityCtx.fillStyle = (r + c) % 2 === 0 ? 'rgba(15, 23, 42, 0.8)' : 'rgba(30, 41, 59, 0.8)';
+                    cityCtx.fillRect(x, y, cellW, cellH);
+
+                    cityCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                    cityCtx.strokeRect(x, y, cellW, cellH);
+
+                    // Draw Building
+                    const type = grid[r][c];
+                    if (type !== 'empty') {
+                        const icon = BUILDINGS[type].icon;
+                        cityCtx.font = '32px sans-serif';
+                        cityCtx.textAlign = 'center';
+                        cityCtx.textBaseline = 'middle';
+                        cityCtx.fillText(icon, x + cellW / 2, y + cellH / 2);
+                    }
+                }
+            }
+        }
+
+        function checkAchievements() {
+            if (cityWaterQuality >= 95) {
+                const a1 = document.getElementById('achieve-1');
+                if (a1.classList.contains('opacity-50')) {
+                    a1.classList.remove('opacity-50');
+                    a1.classList.add('bg-cyan-500/20', 'border-cyan-500/50', 'text-cyan-300');
+                    confetti({ particleCount: 30 });
+                    SoundFX.playSuccess();
+                }
+            }
+
+            let solarCount = 0;
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r][c] === 'solar') solarCount++;
+                }
+            }
+
+            if (solarCount >= 3) {
+                const a2 = document.getElementById('achieve-2');
+                if (a2.classList.contains('opacity-50')) {
+                    a2.classList.remove('opacity-50');
+                    a2.classList.add('bg-emerald-500/20', 'border-emerald-500/50', 'text-emerald-300');
+                    confetti({ particleCount: 30 });
+                    SoundFX.playSuccess();
+                }
+            }
+        }
+
+        function resetCityGame() {
+            cityMoney = 2500;
+            cityPop = 0;
+            cityCycle = 1;
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    grid[r][c] = 'empty';
+                }
+            }
+            logCityNews("Mapa reiniciado! Comece a planejar sua nova metrópole.");
+            updateCityStats();
+            drawCityGrid();
+        }
+
+        // 8. GLOBAL QR CODE MODAL LOGIC
+        function openQRModal() {
+            SoundFX.playWhoosh();
+            document.getElementById('qr-modal').classList.remove('hidden');
+            renderModalQR();
+        }
+
+        function closeQRModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function renderModalQR() {
+            const txt = document.getElementById('qr-modal-input').value;
+            const color = document.getElementById('qr-modal-color').value;
+            const bg = document.getElementById('qr-modal-bg').value;
+            const container = document.getElementById('qr-modal-canvas-box');
+            container.innerHTML = '';
+
+            QRCode.toCanvas(txt, { color: { dark: color, light: bg }, width: 160 }, function (err, canvas) {
+                if (!err) container.appendChild(canvas);
+            });
+        }
+
+        function shareWhatsApp() {
+            const txt = encodeURIComponent("Conheça o EcoFuturo: " + document.getElementById('qr-modal-input').value);
+            window.open(`https://api.whatsapp.com/send?text=${txt}`, '_blank');
+        }
+
+        // INITIAL LOAD
+        window.onload = function() {
+            renderWaterQuiz();
+            updateWaterCalc();
+            updateAQISimulator();
+        };
+    </script>
+</body>
+</html>
